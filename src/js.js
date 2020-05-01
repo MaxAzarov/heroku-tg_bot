@@ -1,11 +1,13 @@
 const puppeteer = require("puppeteer");
 const TelegramBot = require("node-telegram-bot-api");
 const token = "1140081708:AAExicZmtRlepyfDCZYqMryxcppXS8QBew8";
+process.env.NTBA_FIX_319 = 1;
 const bot = new TelegramBot(token, { polling: true });
 bot.onText(/\/route/, (msg, match) => {
   let scrape = async () => {
     const browser = await puppeteer.launch({
-      headless: false
+      headless: false,
+      args: ["--no-sandbox", "--disable-setuid-sandbox"],
     });
     const page = await browser.newPage();
     await page.goto("https://www.eway.in.ua/ru/cities/lviv");
@@ -30,29 +32,30 @@ bot.onText(/\/route/, (msg, match) => {
         [
           {
             text: "Галицьке перехрестя",
-            callback_data: "Галицьке перехрестя"
+            callback_data: "Галицьке перехрестя",
           },
           {
             text: "Бурса",
-            callback_data: "Бурса"
+            callback_data: "Бурса",
           },
           {
             text: "Проспект Червоної калини",
-            callback_data: "Проспект Червоної калини"
-          }
-        ]
-      ]
-    }
+            callback_data: "Проспект Червоної калини",
+          },
+        ],
+      ],
+    },
   });
   let available = 0;
   let idUser = 0;
   let displayed = 1;
-  bot.on("callback_query", query => {
-    scrape().then(value => {
+  let data = "";
+  bot.on("callback_query", (query) => {
+    scrape().then((value) => {
       for (let key in value) {
         const { id, _leaflet_pos } = value[key];
-        x = _leaflet_pos.x;
-        y = _leaflet_pos.y;
+        const x = _leaflet_pos.x;
+        const y = _leaflet_pos.y;
         idUser = query.message.chat.id;
         if (query.data == "Галицьке перехрестя") {
           y < 25 ? available++ : null;
@@ -65,16 +68,18 @@ bot.onText(/\/route/, (msg, match) => {
           bot.sendMessage(idUser, `${query.data}На місці!`);
           displayed++;
           available--;
+        } else {
+          data = query.data;
         }
       }
     });
   });
   if (displayed) {
-    bot.sendMessage(idUser, `Біля ${query.data} Нема!`);
+    bot.sendMessage(idUser, `Біля ${data} Нема!`);
   }
 });
 
-bot.on("message", msg => {
+bot.on("message", (msg) => {
   const chatId = msg.chat.id;
   bot.sendMessage(chatId, "Дай Боже");
 });
